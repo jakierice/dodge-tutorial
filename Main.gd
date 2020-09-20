@@ -1,41 +1,46 @@
 extends Node
 
-export (PackedScene) var Mob
+export(PackedScene) var Mob
 var score
 
 func _ready():
+	print_debug("Game Started")
 	randomize()
-	new_game()
+
 
 func game_over():
 	$ScoreTimer.stop()
 	$MobTimer.stop()
+	$HUD.show_game_over()
+
 
 func new_game():
+	print_debug("Name game initiated.")
 	score = 0
 	$Player.start($StartPosition.position)
 	$StartTimer.start()
+	$HUD.update_score(score)
+	$HUD.show_message("Get Ready")
+
+
+func _on_MobTimer_timeout():
+	$MobPath/MobSpawnLocation.offset = randi()
+	var mob = Mob.instance()
+	add_child(mob)
+	var direction = $MobPath/MobSpawnLocation.rotation + TAU / 4
+	mob.position = $MobPath/MobSpawnLocation.position
+	direction += rand_range(-TAU / 8, TAU / 8)
+	mob.rotation = direction
+	mob.linear_velocity = Vector2(rand_range(mob.min_speed, mob.max_speed), 0).rotated(direction)
+	# warning-ignore:return_value_discarded
+	$HUD.connect("start_game", mob, "_on_start_game")
+
+
+func _on_ScoreTimer_timeout():
+	score += 1
+	$HUD.update_score(score)
+
 
 func _on_StartTimer_timeout():
 	$MobTimer.start()
 	$ScoreTimer.start()
-
-func _on_ScoreTimer_timeout():
-	score += 1
-
-func _on_MobTimer_timeout():
-	# Choose a random location on Path2D.
-	$MobPath/MobSpawnLocation.offset = randi()
-	# Create a Mob instance and add it to the scene.
-	var mob = Mob.instance()
-	add_child(mob)
-	# Set the mob's direction perpendicular to the path direction.
-	var direction = $MobPath/MobSpawnLocation.rotation + PI / 2
-	# Set the mob's position to a random location.
-	mob.position = $MobPath/MobSpawnLocation.position
-	# Add some randomness to the direction.
-	direction += rand_range(-PI / 4, PI / 4)
-	mob.rotation = direction
-	# Set the velocity (speed & direction).
-	mob.linear_velocity = Vector2(rand_range(mob.min_speed, mob.max_speed), 0)
-	mob.linear_velocity = mob.linear_velocity.rotated(direction)	
